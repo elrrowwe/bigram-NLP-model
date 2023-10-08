@@ -52,13 +52,15 @@ for w in words:
 # plt.show()
 
 #the sampling loop
-ind = 0
-output = []
-while True:
-    p = counts_tensor[ind].float() #the tensor (row of counts_tensor), corresponding to the current letter 
-    p /= p.sum()
-    ind = torch.multinomial(p, num_samples=1, replacement=True).item() #sampling a character from the probability distribution tensor
-    output.append(itos[ind])
-    if ind == 0: #if the index sampled is the end token -- break the loop
-        break
-print(''.join(output))
+
+for _ in range(20):
+    ind = 0
+    output = []
+    while True:
+        p = counts_tensor[ind].float() #the tensor (row of counts_tensor), corresponding to the current letter 
+        p /= p.sum()
+        ind = torch.multinomial(p, num_samples=1, replacement=True).item() #sampling a character from the probability distribution tensor
+        output.append(itos[ind])
+        if ind == 0: #if the index sampled is the end token -- break the loop
+            break
+    print(''.join(output))
