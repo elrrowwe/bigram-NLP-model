@@ -53,5 +53,5 @@ for w in words:
         prob_log = torch.log(prob)
         ll += prob_log
         n += 1 #keeping track of the number of bigrams to later on calculate the average log likelihood (ll/n)
-print(f'{-lwl=}')
-print(f'the average negative log likelihood: {-ll/n}') #the term to be minimized 
+print(f'{-ll=}')
+print(f'the average log likelihood: {-ll/n}')
