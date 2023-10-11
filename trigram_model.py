@@ -9,49 +9,64 @@ which uses a 'lookup table' (which is actually a tensor, containing probabilitie
 rather simple neural network. 
 """
 
+#TODO: change the lookup table generation process to a NN-driven one 
+
 words = open('names.txt', 'r').read().splitlines()
 
-#creating the training set 
-x = [] 
-y = [] #targets
+#the counts tensor           3D, now that we have 2 predictors and 1 target 
+counts_tensor = torch.zeros((27,27,27), dtype=torch.int32)
+
 for w in words:
     chars = ['.'] + list(w) + ['.'] #adding special start and end tokens to each word
-    for i,j in zip(chars, chars[1:]):
+    for i,j,k in zip(chars, chars[1:], chars[2:]):
         ind_i = stoi(i)
         ind_j = stoi(j)
+        ind_k = stoi(k)
 
-        #appending the first char to the predictors list
-        x.append(ind_i)  
-        y.append(ind_j) #appending the second char to the targets 
-        #the model, given the first letter, predicts the next one after it 
+        counts_tensor[ind_i, ind_j, ind_k] += 1
 
-#converting previously created lists to tensors 
-xt = torch.tensor(x)
-yt = torch.tensor(y)
+#preprocessing the counts_tensor 'table' for it to contain probabilities 
+P_prep = (counts_tensor+5).float()
+P_prep /= P_prep.sum(2, keepdim=True) 
 
-#saving the number of training examples (ngrams, since the model is training on ngrams precisely) for later 
-num = xt.nelement()
-
-#encoding the tensors using one-hot encoding 
-xtenc = F.one_hot(xt, num_classes=27).float()
-
-#initializing the network
-network = NN((27,27), num)
-
-W = network.train(xtenc, yt, learning_rate=50)
-
-#sampling from the model 
-for _ in range(5):
-    ind = 0
+#the sampling loop
+for _ in range(20):
+    ind_1 = 0 #ind of the first predictor
+    ind_2 = 0 #ind of the second predictor 
     output = []
     while True:
-        xenc = F.one_hot(torch.tensor([ind]), num_classes=27).float() #one-hot encoding the index 
-        logits = xenc @ W #basically "plucking out" the row corresponding to the current index out of the weights tensor (because of how matrix multiplication works)
-        counts = logits.exp() #converting the log-counts to counts by reversing the log operation (exponentiation)
-        p = counts / counts.sum(1, keepdim=True)
+        p = P_prep[ind_1, ind_2] #the tensor (row of counts_tensor), corresponding to the current letter 
 
-        ind = torch.multinomial(p, num_samples=1, replacement=True).item() #sampling a character from the probability distribution tensor
-        output.append(itos(ind))
-        if ind == 0: #if the index sampled is the end token -- break the loop
+        next_sym = torch.multinomial(p, num_samples=1, replacement=True).item() #sampling a character from the probability distribution tensor
+
+        #the first predictor's index takes on the value of the second predictor's index, and the second predictor's index becomes that of the next letter (symbol)  
+        ind_1 = ind_2
+        ind_2 = next_sym
+
+        output.append(itos(next_sym))
+
+        if next_sym == 0: #if the index sampled is the end token -- break the loop
             break
     print(''.join(output))
+
+
+ll = 0.0
+n = 0
+#calculating the log likelihood of each bigram for model quality estimation 
+for w in words:
+    chars = ['.'] + list(w) + ['.'] #adding special start and end tokens to each word
+    for i,j,k in zip(chars, chars[1:], chars[2:]):
+        ind_i = stoi(i)
+        ind_j = stoi(j)
+        ind_k = stoi(k)
+
+        #the probability of k following i,j OR p(k|i,j) (kind of)
+        prob = P_prep[ind_i, ind_j, ind_k]
+        prob_log = torch.log(prob).item()
+        ll += prob_log
+        n += 1
+
+print(f'll: {ll}')
+nll = -ll
+print(f'nll: {nll}')
+print(f'average nll: {nll/n}')
