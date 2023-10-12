@@ -1,5 +1,5 @@
 # bigram-NLP-model
-This is my implementation of the bigram language model, as described by Andrej Karpathy in his makemore series.
+This is my implementation of the n-gram language model, as described by Andrej Karpathy in his makemore series.
 
 # How does it work?
 An n-gram language model works by assigning probabilities to each n-gram encountered in the training set and predicting the next letter in a sequence, based on the probabilities calculated earlier; a bigram model is a generalization of the n-gram one. 
